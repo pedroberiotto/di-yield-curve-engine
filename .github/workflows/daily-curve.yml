@@ -1,0 +1,43 @@
+name: Daily curve
+
+on:
+  schedule:
+    - cron: "0 23 * * 1-5"
+    - cron: "0 11 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-curve
+  cancel-in-progress: false
+
+jobs:
+  build-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install with data and viz extras
+        run: pip install -e ".[data,viz]"
+
+      - name: Rebuild missing curves
+        run: python scripts/daily_curve.py
+
+      - name: Commit the day's curve if anything is new
+        run: |
+          if [ -n "$(git status --porcelain data/curves data/raw reports/figures)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/curves data/raw reports/figures
+            git commit -m "chore: daily curve [skip ci]"
+            git push
+          else
+            echo "Nothing new, clean exit, no commit."
+          fi
