@@ -122,8 +122,9 @@ def test_parse_bcb_overnight_empty():
 
 
 def test_live_contracts_drops_contract_maturing_on_d0():
-    import fetch_di1
     from datetime import date
+
+    import fetch_di1
 
     d0 = date(2026, 7, 1)
     rows = [
@@ -136,8 +137,9 @@ def test_live_contracts_drops_contract_maturing_on_d0():
 
 
 def test_save_skips_expired_front(tmp_path):
-    import fetch_di1
     from datetime import date
+
+    import fetch_di1
 
     d0 = date(2026, 7, 1)
     rows = [
