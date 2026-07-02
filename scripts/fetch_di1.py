@@ -120,11 +120,19 @@ def fetch_recent(start: date) -> tuple[date, list[tuple[str, float, float]]]:
     raise SystemExit(f"no settlements in the last {MAX_LOOKBACK} business days from {start}")
 
 
+def live_contracts(refdate: date, rows):
+    return [
+        (ticker, pu, taxa)
+        for ticker, pu, taxa in rows
+        if DI1(ticker, refdate).maturity > refdate
+    ]
+
+
 def save(refdate: date, rows, raw_dir: Path = RAW_DIR) -> Path:
     raw_dir.mkdir(parents=True, exist_ok=True)
     path = raw_dir / f"settlements_{refdate.isoformat()}.csv"
     enriched = []
-    for ticker, pu, taxa in rows:
+    for ticker, pu, taxa in live_contracts(refdate, rows):
         du = DI1(ticker, refdate).du
         spot = rate_from_pu(pu, du)
         enriched.append((ticker, du, pu, taxa, spot))
@@ -151,7 +159,7 @@ def main() -> None:
     start = date.fromisoformat(args.data) if args.data else preceding(date.today())
     refdate, rows = fetch_recent(start)
     path = save(refdate, rows)
-    dus = [DI1(t, refdate).du for t, _, _ in rows]
+    dus = [DI1(t, refdate).du for t, _, _ in live_contracts(refdate, rows)]
     print(
         f"[fetch_di1] d0={refdate.isoformat()}  DI1 contracts={len(rows)}  "
         f"du={min(dus)}..{max(dus)}"

@@ -119,3 +119,31 @@ def test_parse_bcb_overnight_empty():
     import fetch_di1
 
     assert fetch_di1.parse_bcb_overnight([]) is None
+
+
+def test_live_contracts_drops_contract_maturing_on_d0():
+    import fetch_di1
+    from datetime import date
+
+    d0 = date(2026, 7, 1)
+    rows = [
+        ("DI1N26", 100000.0, 14.0),
+        ("DI1Q26", 99000.0, 14.1),
+        ("DI1F27", 93000.0, 14.2),
+    ]
+    live = fetch_di1.live_contracts(d0, rows)
+    assert [r[0] for r in live] == ["DI1Q26", "DI1F27"]
+
+
+def test_save_skips_expired_front(tmp_path):
+    import fetch_di1
+    from datetime import date
+
+    d0 = date(2026, 7, 1)
+    rows = [
+        ("DI1N26", 100000.0, 14.0),
+        ("DI1Q26", 99000.0, 14.1),
+    ]
+    path = fetch_di1.save(d0, rows, tmp_path)
+    tickers = [ln.split(",")[1] for ln in path.read_text().splitlines()[1:]]
+    assert tickers == ["DI1Q26"]
